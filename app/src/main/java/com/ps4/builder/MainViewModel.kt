@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.ps4.builder.data.HistoryEntry
 import com.ps4.builder.data.HistoryStore
 import com.ps4.builder.data.Settings
+import com.ps4.builder.net.Backend
 import com.ps4.builder.net.GitHubApi
 import com.ps4.builder.net.GitHubException
 import com.ps4.builder.net.Ps4Client
@@ -140,6 +141,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private fun apiOrNull(): GitHubApi? {
         val s = settings
         if (s == null) { update { it.copy(settingsMsg = it.settingsError) }; return null }
+        if (Backend.proxied) {
+            val (o, r) = Backend.REPO.split("/")
+            return GitHubApi("", o, r, Backend.PROXY_URL.trimEnd('/'))
+        }
+        if (Backend.managed) {
+            val (o, r) = Backend.REPO.split("/")
+            return GitHubApi(Backend.token, o, r)
+        }
         if (s.token.isBlank() || !repoRegex.matches(s.repo)) {
             update { it.copy(settingsMsg = Msg("أدخل الـ token و owner/repo ثم اضغط حفظ أولاً.", "Enter the token and owner/repo and press Save first.")) }
             setBuild(BuildUi.Problem(Msg("الإعدادات غير مكتملة: الـ token أو owner/repo ناقص (تبويب الإعدادات).", "Settings incomplete: token or owner/repo missing (Settings tab).")))

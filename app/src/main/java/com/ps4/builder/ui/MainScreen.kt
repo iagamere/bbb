@@ -1,5 +1,6 @@
 package com.ps4.builder.ui
 
+import com.ps4.builder.net.Backend
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -134,7 +135,7 @@ private fun BuildTab(vm: MainViewModel, st: UiState, goSettings: () -> Unit) {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        if (st.repo.isBlank() || st.token.isBlank()) {
+        if (!Backend.managed && (st.repo.isBlank() || st.token.isBlank())) {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(s("أكمل الإعدادات أولاً: GitHub token و owner/repo.", "Finish the settings first: GitHub token and owner/repo."))
@@ -298,23 +299,25 @@ private fun SettingsTab(vm: MainViewModel, st: UiState) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         st.settingsError?.let { Text(it.t(st.lang), color = Bad) }
-        OutlinedTextField(
-            value = token, onValueChange = { token = it }, singleLine = true,
-            label = { Text("GitHub token") },
-            supportingText = { Text(s("fine-grained: Contents / Actions / Releases = Read and write", "fine-grained: Contents / Actions / Releases = Read and write")) },
-            visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = repo, onValueChange = { repo = it }, singleLine = true,
-            label = { Text("owner/repo") }, modifier = Modifier.fillMaxWidth()
-        )
+        if (!Backend.managed) {
+            OutlinedTextField(
+                value = token, onValueChange = { token = it }, singleLine = true,
+                label = { Text("GitHub token") },
+                supportingText = { Text(s("fine-grained: Contents / Actions / Releases = Read and write", "fine-grained: Contents / Actions / Releases = Read and write")) },
+                visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = repo, onValueChange = { repo = it }, singleLine = true,
+                label = { Text("owner/repo") }, modifier = Modifier.fillMaxWidth()
+            )
+        }
         OutlinedTextField(
             value = ip, onValueChange = { ip = it }, singleLine = true,
             label = { Text(s("IP الـ PS4", "PS4 IP")) }, modifier = Modifier.fillMaxWidth()
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { vm.saveSettings(token, repo, ip) }) { Text(s("حفظ", "Save")) }
-            OutlinedButton(onClick = { vm.saveSettings(token, repo, ip); vm.testConnection() }, enabled = !st.settingsBusy) {
+            if (!Backend.managed) OutlinedButton(onClick = { vm.saveSettings(token, repo, ip); vm.testConnection() }, enabled = !st.settingsBusy) {
                 Text(s("حفظ + اختبار GitHub", "Save + test GitHub"))
             }
         }

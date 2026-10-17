@@ -21,7 +21,7 @@ data class ReleaseInfo(val tag: String, val assets: List<Asset>)
  * Minimal GitHub REST client. The token is only ever placed in the Authorization header;
  * it is never logged and never included in exception messages.
  */
-class GitHubApi(private val token: String, owner: String, repo: String) {
+class GitHubApi(private val token: String, owner: String, repo: String, apiRoot: String = "https://api.github.com") {
     companion object { const val WORKFLOW_FILE = "build.yml" }
 
     private val http = OkHttpClient.Builder()
@@ -29,11 +29,11 @@ class GitHubApi(private val token: String, owner: String, repo: String) {
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(120, TimeUnit.SECONDS)
         .build()
-    private val base = "https://api.github.com/repos/$owner/$repo"
+    private val base = "$apiRoot/repos/$owner/$repo"
     private val json = "application/json".toMediaType()
 
     private fun builder(url: String) = Request.Builder().url(url)
-        .header("Authorization", "Bearer $token")
+        .apply { if (token.isNotBlank()) header("Authorization", "Bearer $token") }   // blank = going through the proxy, which adds it
         .header("Accept", "application/vnd.github+json")
         .header("X-GitHub-Api-Version", "2022-11-28")
 
